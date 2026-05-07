@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0f0f">
+  <title>Trading Calc</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; padding-bottom: 80px; }
+
+    /* HEADER */
+    .header { background: #1a1a2e; padding: 14px 16px 10px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #2a2a2a; }
+    .header h1 { font-size: 17px; font-weight: 700; color: #E8C97A; }
+    .header .tc-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+    .tc-badge { background: #0f3460; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #4dcc8f; font-weight: 600; }
+    .tc-update { font-size: 11px; color: #555; }
+    .tc-loading { color: #E8C97A; }
+
+    /* CONFIG ROW */
+    .config { display: flex; gap: 8px; padding: 12px 16px; background: #111; border-bottom: 1px solid #1e1e1e; }
+    .config-item { flex: 1; }
+    .config-item label { font-size: 11px; color: #777; display: block; margin-bottom: 4px; }
+    .config-item select { width: 100%; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; }
+
+    /* TABS */
+    .tabs { display: flex; background: #111; border-bottom: 1px solid #1e1e1e; }
+    .tab { flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab.active { color: #4da6ff; border-bottom-color: #4da6ff; }
+
+    /* PANELS */
+    .panel { display: none; padding: 16px; }
+    .panel.active { display: block; }
+
+    /* FOREX PANEL */
+    .par-card { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 1px solid #2a2a2a; }
+    .par-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .par-inputs { display: flex; gap: 8px; align-items: center; }
+    .par-inputs input { flex: 1; font-size: 16px; padding: 10px 12px; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; text-align: center; }
+    .par-inputs input:focus { outline: none; border-color: #4da6ff; }
+    .par-result { display: none; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .mini-card { background: #111; border-radius: 8px; padding: 8px; text-align: center; }
+    .mini-card label { font-size: 10px; color: #777; display: block; margin-bottom: 2px; }
+    .mini-card .v { font-size: 18px; font-weight: 700; }
+    .v-lotes { color: #4da6ff; }
+    .v-micro { color: #cc8eff; }
+    .v-riesgo { color: #4dcc8f; }
+
+    /* CRYPTO PANEL */
+    .activo-card { background: #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 1px solid #2a2a2a; }
+    .activo-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .activo-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .activo-inputs .field label { font-size: 11px; color: #777; display: block; margin-bottom: 4px; }
+    .activo-inputs .field input { width: 100%; font-size: 15px; padding: 9px 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; text-align: center; }
+    .activo-inputs .field input:focus { outline: none; border-color: #4da6ff; }
+    .activo-result { margin-top: 10px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .activo-result.show { display: grid; }
+
+    /* TABLA FOREX */
+    .tabla-btn { width: 100%; padding: 10px; background: #1a1a2e; border: 1px solid #333; border-radius: 8px; color: #4da6ff; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+    .tabla-wrap { display: none; margin-top: 10px; }
+    .tabla-wrap.show { display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { font-size: 11px; color: #777; padding: 6px 8px; border-bottom: 1px solid #2a2a2a; text-align: center; }
+    td { padding: 8px; border-bottom: 1px solid #1a1a1a; text-align: center; }
+    tr:last-child td { border-bottom: none; }
+    .td-pip { color: #fff; font-weight: 600; }
+    .td-lotes { color: #4da6ff; font-weight: 500; }
+    .td-riesgo { color: #4dcc8f; }
+
+    /* GRUPOS */
+    .group-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 6px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>📊 Trading Calc</h1>
+    <div class="tc-row">
+      <div class="tc-badge">EUR/USD: <span id="tc_display">cargando...</span></div>
+      <span class="tc-update" id="tc_time"></span>
+    </div>
+  </div>
+
+  <div class="config">
+    <div class="config-item">
+      <label>Cuenta</label>
+      <select id="cuenta" onchange="updateAll()">
+        <option value="5000">5.000€</option>
+        <option value="10000">10.000€</option>
+      </select>
+    </div>
+    <div class="config-item">
+      <label>Riesgo %</label>
+      <select id="riesgo_pct" onchange="updateAll()">
+        <option value="0.3">0.3%</option>
+        <option value="0.5">0.5%</option>
+        <option value="1">1%</option>
+        <option value="2">2%</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('forex')">💱 Forex</div>
+    <div class="tab" onclick="switchTab('crypto')">🪙 Crypto</div>
+    <div class="tab" onclick="switchTab('acciones')">📈 Acciones</div>
+  </div>
+
+  <!-- PANEL FOREX -->
+  <div class="panel active" id="panel_forex">
+    <div id="forex_cards"></div>
+    <div class="group-label">Tabla de referencia rápida</div>
+    <div class="par-card">
+      <div class="par-name">Par seleccionado para tabla</div>
+      <select id="tabla_par" onchange="renderTabla()" style="width:100%;font-size:14px;padding:8px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;margin-bottom:10px;">
+        <option value="10">EURUSD</option>
+        <option value="10">GBPUSD</option>
+        <option value="7.5">AUDUSD</option>
+        <option value="7.3">USDCAD</option>
+      </select>
+      <table>
+        <thead><tr><th>Pips SL</th><th>Lotes</th><th>Micro</th><th>Riesgo €</th></tr></thead>
+        <tbody id="tabla_body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PANEL CRYPTO -->
+  <div class="panel" id="panel_crypto">
+    <div id="crypto_cards"></div>
+  </div>
+
+  <!-- PANEL ACCIONES -->
+  <div class="panel" id="panel_acciones">
+    <div id="acciones_cards"></div>
+  </div>
+
+  <script>
+    let TC = 1.17;
+    const stops = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,25,28,30];
+    const forex = [["EURUSD",10],["GBPUSD",10],["AUDUSD",7.5],["USDCAD",7.3]];
+    const cryptos = ["BTCUSD","ETHUSD","XRPUSD","SOLUSD","DOGEUSD","ADAUSD"];
+    const acciones = ["META","MSFT","TSLA","GOOG","AAPL","AMZN","NVDA"];
+
+    // Fetch EUR/USD
+    async function fetchTC() {
+      try {
+        const r = await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD');
+        const d = await r.json();
+        TC = d.rates.USD;
+        document.getElementById('tc_display').textContent = TC.toFixed(5);
+        document.getElementById('tc_time').textContent = 'Actualizado ✓';
+        updateAll();
+      } catch(e) {
+        document.getElementById('tc_display').textContent = TC.toFixed(5) + ' (sin conexión)';
+      }
+    }
+
+    function getRiesgo() {
+      return parseFloat(document.getElementById('cuenta').value) * parseFloat(document.getElementById('riesgo_pct').value) / 100;
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['forex','crypto','acciones'][i]===tab));
+      document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', ['panel_forex','panel_crypto','panel_acciones'][i]==='panel_'+tab));
+    }
+
+    // FOREX CARDS
+    function renderForex() {
+      const riesgo = getRiesgo();
+      const html = forex.map(([par, pipUSD]) => {
+        const pipEUR = pipUSD / TC;
+        return `
+        <div class="par-card">
+          <div class="par-name">${par}</div>
+          <div class="par-inputs">
+            <input type="number" placeholder="Pips SL" step="0.1" min="0"
+              oninput="calcForex(this, ${pipEUR}, ${riesgo})" id="input_${par}">
+          </div>
+          <div class="par-result" id="result_${par}">
+            <div class="mini-card"><label>Lotes</label><div class="v v-lotes" id="lotes_${par}">—</div></div>
+            <div class="mini-card"><label>Micro lotes</label><div class="v v-micro" id="micro_${par}">—</div></div>
+            <div class="mini-card"><label>Riesgo €</label><div class="v v-riesgo" id="riesgo_${par}">—</div></div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('forex_cards').innerHTML = html;
+    }
+
+    function calcForex(input, pipEUR, riesgo) {
+      const pips = parseFloat(input.value);
+      const par = input.id.replace('input_','');
+      const pipEURActual = parseFloat(document.getElementById('tabla_par').value) ? forex.find(f=>f[0]===par)?.[1]/TC || pipEUR : pipEUR;
+      const pipEURReal = forex.find(f=>f[0]===par)?.[1] / TC;
+      if (!pips || pips <= 0) { document.getElementById('result_'+par).style.display='none'; return; }
+      const lotes = riesgo / (pips * pipEURReal);
+      const micro = Math.round(lotes * 100);
+      const riesgoReal = (micro * pips * pipEURReal / 100).toFixed(2);
+      document.getElementById('lotes_'+par).textContent = lotes.toFixed(2);
+      document.getElementById('micro_'+par).textContent = micro;
+      document.getElementById('riesgo_'+par).textContent = riesgoReal + '€';
+      document.getElementById('result_'+par).style.display = 'grid';
+    }
+
+    // TABLA
+    function renderTabla() {
+      const riesgo = getRiesgo();
+      const pipUSD = parseFloat(document.getElementById('tabla_par').value);
+      const pipEUR = pipUSD / TC;
+      const tbody = document.getElementById('tabla_body');
+      tbody.innerHTML = stops.map(s => {
+        const lotes = riesgo / (s * pipEUR);
+        const micro = Math.round(lotes * 100);
+        const rReal = (micro * s * pipEUR / 100).toFixed(2);
+        return `<tr><td class="td-pip">${s}</td><td class="td-lotes">${lotes.toFixed(2)}</td><td>${micro}</td><td class="td-riesgo">${rReal}€</td></tr>`;
+      }).join('');
+    }
+
+    // CRYPTO / ACCIONES CARDS
+    function renderActivos(list, containerId) {
+      const html = list.map(activo => `
+        <div class="activo-card">
+          <div class="activo-name">${activo}</div>
+          <div class="activo-inputs">
+            <div class="field"><label>Precio entrada</label><input type="number" step="any" placeholder="0.00" oninput="calcActivo('${activo}')" id="entrada_${activo}"></div>
+            <div class="field"><label>Precio SL</label><input type="number" step="any" placeholder="0.00" oninput="calcActivo('${activo}')" id="sl_${activo}"></div>
+          </div>
+          <div class="activo-result" id="result_${activo}">
+            <div class="mini-card"><label>Lotes</label><div class="v v-lotes" id="lotes_${activo}">—</div></div>
+            <div class="mini-card"><label>Unidades</label><div class="v v-micro" id="micro_${activo}">—</div></div>
+            <div class="mini-card"><label>Diferencia</label><div class="v" style="color:#E8C97A;font-size:16px" id="diff_${activo}">—</div></div>
+            <div class="mini-card"><label>Riesgo €</label><div class="v v-riesgo" id="riesgo_${activo}">—</div></div>
+          </div>
+        </div>`).join('');
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    function calcActivo(activo) {
+      const entrada = parseFloat(document.getElementById('entrada_'+activo).value);
+      const sl = parseFloat(document.getElementById('sl_'+activo).value);
+      const res = document.getElementById('result_'+activo);
+      if (!entrada || !sl || entrada === sl) { res.classList.remove('show'); return; }
+      const riesgo = getRiesgo();
+      const diff = Math.abs(entrada - sl);
+      const lotes = riesgo / (diff / TC);
+      document.getElementById('lotes_'+activo).textContent = lotes < 0.01 ? lotes.toFixed(4) : lotes.toFixed(2);
+      document.getElementById('micro_'+activo).textContent = lotes.toFixed(2);
+      document.getElementById('diff_'+activo).textContent = diff.toFixed(4);
+      document.getElementById('riesgo_'+activo).textContent = riesgo.toFixed(2) + '€';
+      res.classList.add('show');
+    }
+
+    function updateAll() {
+      renderForex();
+      renderTabla();
+      renderActivos(cryptos, 'crypto_cards');
+      renderActivos(acciones, 'acciones_cards');
+    }
+
+    fetchTC();
+    setInterval(fetchTC, 300000); // Actualiza cada 5 min
+    updateAll();
+  </script>
+</body>
+</html>
